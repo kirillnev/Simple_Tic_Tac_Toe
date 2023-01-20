@@ -18,7 +18,13 @@ def matrix_to_string(matrix):
     for i in range(3):
         string += "\n| "
         for j in range(3):
-            string += matrix[i][j] + ' '
+            if matrix[i][j] == 0:
+                string += SYMBOL_EMPTY + ' '
+            elif matrix[i][j] == 1:
+                string += SYMBOL_X + ' '
+            else:
+                string += SYMBOL_O + ' '
+
         string += "|"
     string += "\n---------"
     return string
@@ -29,7 +35,8 @@ def string_to_matrix(string):
     for i in range(3):
         matrix.append([])
         for j in range(3):
-            matrix[i].append(string[i * 3 + j])
+            value = 1 if string[i * 3 + j] == SYMBOL_X else 2 if string[i * 3 + j] == SYMBOL_O else 0
+            matrix[i].append(value)
     return matrix
 
 
@@ -37,80 +44,106 @@ def is_matrix_right(matrix):
     count_x, count_o, count_empty = 0, 0, 0
     for i in range(3):
         for j in range(3):
-            count_x += 1 if matrix[i][j] == SYMBOL_X else 0
-            count_o += 1 if matrix[i][j] == SYMBOL_O else 0
-            count_empty += 1 if matrix[i][j] == SYMBOL_EMPTY else 0
+            count_x += 1 if matrix[i][j] == 1 else 0
+            count_o += 1 if matrix[i][j] == 2 else 0
+            count_empty += 1 if matrix[i][j] == 0 else 0
     return abs(count_x - count_o) <= 1 and count_x + count_o + count_empty == 9
 
 
-def check_col(matrix, col_number):
-    count = 0
-    winner_symbol = matrix[0][col_number]
-    if winner_symbol != SYMBOL_EMPTY:
-        for i in range(3):
-            count += 1 if matrix[i][col_number] == winner_symbol else 0
-        return winner_symbol if count == 3 else SYMBOL_EMPTY
-    else:
-        return SYMBOL_EMPTY
+def check_col(matrix, col):
+    result = 1
+    for i in range(3):
+        result *= matrix[i][col]
+    return result
 
 
-def check_row(matrix, row_number):
-    count = 0
-    winner_symbol = matrix[row_number][0]
-    if winner_symbol != SYMBOL_EMPTY:
-        for i in range(3):
-            count += 1 if matrix[row_number][i] == winner_symbol else 0
-        return winner_symbol if count == 3 else SYMBOL_EMPTY
-    else:
-        return SYMBOL_EMPTY
+def check_row(matrix, row):
+    result = 1
+    for i in range(3):
+        result *= matrix[row][i]
+    return result
 
 
-def check_diagonal(matrix, diagonal_number):
-    if diagonal_number == 0 and matrix[0][0] == matrix[1][1] == matrix[2][2] or \
-            diagonal_number == 1 and matrix[0][2] == matrix[1][1] == matrix[2][0]:
-        return matrix[1][1]
-    else:
-        return SYMBOL_EMPTY
+def check_diagonal(matrix, diagonal):
+    result = 1
+    for i in range(3):
+        result *= matrix[i][i] if diagonal == 0 else matrix[i][2 - i]
+    return result
 
 
 def check_result(matrix):
     rows_result = [check_row(matrix, i) for i in range(3)]
     cols_result = [check_col(matrix, i) for i in range(3)]
     diagonals_result = [check_diagonal(matrix, i) for i in range(2)]
-    x_wins_count = 0
-    o_wins_count = 0
-    empty_count = 0
-    for i in range(3):
-        for j in range(3):
-            empty_count += 1 if matrix[i][j] == SYMBOL_EMPTY else 0
-    for i in range(3):
-        x_wins_count += 1 if rows_result[i] == SYMBOL_X else 0
-        x_wins_count += 1 if cols_result[i] == SYMBOL_X else 0
-        o_wins_count += 1 if rows_result[i] == SYMBOL_O else 0
-        o_wins_count += 1 if cols_result[i] == SYMBOL_O else 0
-    for i in range(2):
-        x_wins_count += 1 if diagonals_result[i] == SYMBOL_X else 0
-        o_wins_count += 1 if diagonals_result[i] == SYMBOL_O else 0
-    if x_wins_count > 0 and o_wins_count > 0 or x_wins_count > 1 or o_wins_count > 1:
-        return "Impossible"
-    elif x_wins_count == 1:
-        return "X wins"
-    elif o_wins_count == 1:
-        return "O wins"
-    elif empty_count > 0:
-        return "Game not finished"
+    result = 0
+
+    if 1 in rows_result and 8 in rows_result or \
+        1 in cols_result and 8 in cols_result or \
+        1 in diagonals_result and 8 in diagonals_result:
+        raise ValueError
+
+    if 1 in rows_result or 1 in cols_result or 1 in diagonals_result:
+        result = 1
+    elif 8 in rows_result or 8 in cols_result or 8 in diagonals_result:
+        result = 2
+    elif 0 in rows_result or 0 in cols_result or 0 in diagonals_result:
+        result = 0
     else:
-        return "Draw"
+        result = -1
+
+    return result
+
+
+def print_result(result):
+    if result == 1:
+        print("X wins")
+    elif result == 2:
+        print("O wins")
+    elif result == 0:
+        print("Game is not finished")
+    else:
+        print("Draw")
+
+
+def is_cell_empty(matrix, i, j):
+    return matrix[i][j] == 0
+
+
+def input_cell(matrix):
+    is_exit = False
+    while not is_exit:
+        try:
+            i, j = input().split()
+            i = int(i)
+            j = int(j)
+            if 1 <= i <= 3 and 1 <= j <= 3:
+                if is_cell_empty(matrix, i - 1, j - 1):
+                    is_exit = True
+                    matrix[i - 1][j - 1] = 1
+                else:
+                    print("This cell is occupied! Choose another one!")
+            else:
+                print("Coordinates should be from 1 to 3!")
+        except ValueError:
+            print("You should enter numbers!")
+
+
+def go():
+    input_string = input()
+    try:
+        if not is_input_correct(input_string):
+            raise ValueError
+        matrix = string_to_matrix(input_string)
+        print(matrix_to_string(matrix))
+        if not is_matrix_right(matrix):
+            raise ValueError
+
+        input_cell(matrix)
+        print(matrix_to_string(matrix))
+
+    except ValueError:
+        print("Impossible")
 
 
 if __name__ == "__main__":
-    input_string = input()
-    if is_input_correct(input_string):
-        field = string_to_matrix(input_string)
-        print(matrix_to_string(field))
-        if is_matrix_right(field):
-            print(check_result(field))
-        else:
-            print("Impossible")
-    else:
-        print("Incorrect input data")
+    go()
